@@ -11,8 +11,8 @@ func (c *Cursor) Move(dX int, dY int) {
 }
 
 func (b *Buffer) ClampCursor() {
-	b.ClampCursorX()
 	b.ClampCursorY()
+	b.ClampCursorX()
 }
 
 func (b *Buffer) ClampCursorX() {
