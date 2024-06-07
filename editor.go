@@ -39,15 +39,18 @@ func (e *Editor) Render() {
 	e.screen.SetStyle(tcell.StyleDefault)
 	e.screen.Clear()
 
-	lineNumberStyle := tcell.StyleDefault.Foreground(tcell.ColorDimGray)
+	for y := 0; y < len(e.buffer.lines); y++ {
+		isCursorLine := y == e.buffer.cursor.Y
 
-	_, height := e.screen.Size()
+		style := lineNumberStyle
+		if isCursorLine {
+			style = lineStyle
+		}
 
-	for y := 0; y < height; y++ {
-		x := e.write(1, y, fmt.Sprintf("%2d", y+1), lineNumberStyle) + 1
+		x := e.write(1, y, fmt.Sprintf("%2d", y+1), style) + 1
 
 		if y < len(e.buffer.lines) {
-			e.write(x, y, e.buffer.lines[y], tcell.StyleDefault)
+			e.write(x, y, e.buffer.lines[y], lineStyle)
 		}
 	}
 
@@ -58,14 +61,20 @@ func (e *Editor) Render() {
 func (e *Editor) write(x int, y int, str string, style tcell.Style) int {
 	for _, ch := range str {
 		if ch == '\t' {
-			x += 4
+			for i := 0; i < tabWidth; i++ {
+				x = e.writeChar(x, y, ' ', style)
+			}
 		} else {
-			e.screen.SetContent(x, y, ch, nil, style)
-			x++
+			x = e.writeChar(x, y, ch, style)
 		}
 	}
 
 	return x
+}
+
+func (e *Editor) writeChar(x int, y int, ch rune, style tcell.Style) int {
+	e.screen.SetContent(x, y, ch, nil, style)
+	return x + 1
 }
 
 func (e *Editor) setCursor() {
@@ -110,6 +119,7 @@ func (e *Editor) MoveCursor(dX int, dY int) {
 	}
 
 	e.setCursor()
+	e.Render()
 	e.screen.Show()
 }
 
