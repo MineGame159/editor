@@ -47,11 +47,11 @@ func (e *Editor) LoadBuffer(path string) error {
 		if err != nil {
 			return err
 		}
-	}
 
-	err = file.Close()
-	if err != nil {
-		return err
+		err = file.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	e.buffer = buf
