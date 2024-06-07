@@ -69,49 +69,82 @@ func (e *Editor) write(x int, y int, str string, style tcell.Style) int {
 }
 
 func (e *Editor) setCursor() {
-	e.screen.ShowCursor(e.buffer.cursor.X+4, e.buffer.cursor.Y)
+	e.screen.ShowCursor(e.getCursorVisibleOffset(), e.buffer.cursor.Y)
 }
 
-func (e *Editor) UpdateCursor() {
+func (e *Editor) ClampCursorY() {
 	c := &e.buffer.cursor
 
-	// Clamp Y
 	if c.Y < 0 {
 		c.Y = 0
 	} else if c.Y >= len(e.buffer.lines) {
 		c.Y = len(e.buffer.lines) - 1
 	}
+}
 
-	// Clamp X
-	width := stringWidth(e.buffer.lines[c.Y])
+func (e *Editor) ClampCursorX() {
+	c := &e.buffer.cursor
+	width := len(e.buffer.lines[c.Y])
 
 	if c.X < 0 {
 		c.X = 0
 	} else if c.X > width {
 		c.X = width
 	}
+}
+
+func (e *Editor) MoveCursor(dX int, dY int) {
+	visibleOffset := 0
+
+	if dY != 0 {
+		visibleOffset = e.getCursorVisibleOffset()
+	}
+
+	e.buffer.cursor.Move(dX, dY)
+	e.ClampCursorY()
+	e.ClampCursorX()
+
+	if dY != 0 {
+		e.buffer.cursor.X = e.getCursorCharacterOffset(visibleOffset)
+		e.ClampCursorX()
+	}
 
 	e.setCursor()
 	e.screen.Show()
 }
 
-func (e *Editor) MoveCursor(dX int, dY int) {
-	e.buffer.cursor.Move(dX, dY)
-	e.UpdateCursor()
-}
+func (e *Editor) getCursorVisibleOffset() int {
+	offset := 4
 
-func stringWidth(str string) int {
-	width := 0
+	for i, ch := range e.buffer.lines[e.buffer.cursor.Y] {
+		if i >= e.buffer.cursor.X {
+			break
+		}
 
-	for _, ch := range str {
 		if ch == '\t' {
-			width += 4
+			offset += 4
 		} else {
-			width++
+			offset++
 		}
 	}
 
-	return width
+	return offset
+}
+
+func (e *Editor) getCursorCharacterOffset(visible int) int {
+	offset := visible - 4
+
+	for i, ch := range e.buffer.lines[e.buffer.cursor.Y] {
+		if i >= e.buffer.cursor.X {
+			break
+		}
+
+		if ch == '\t' {
+			offset -= 3
+		}
+	}
+
+	return offset
 }
 
 func (e *Editor) Run() {
@@ -131,6 +164,22 @@ func (e *Editor) Run() {
 			case tcell.KeyDown:
 				e.MoveCursor(0, 1)
 
+			case tcell.KeyRune:
+				e.buffer.Insert(event.Rune())
+				e.Render()
+
+			case tcell.KeyTab:
+				e.buffer.Insert('\t')
+				e.Render()
+
+			case tcell.KeyBackspace2:
+				e.buffer.Delete()
+				e.Render()
+
+			case tcell.KeyEnter:
+				e.buffer.NewLine()
+				e.Render()
+
 			case tcell.KeyEscape:
 				e.screen.Fini()
 				return
@@ -139,11 +188,15 @@ func (e *Editor) Run() {
 		case *tcell.EventMouse:
 			if event.Buttons()&tcell.ButtonPrimary != 0 {
 				c := &e.buffer.cursor
-
 				c.X, c.Y = event.Position()
-				c.X -= 4
 
-				e.UpdateCursor()
+				e.ClampCursorY()
+				c.X = e.getCursorCharacterOffset(c.X)
+
+				e.ClampCursorX()
+
+				e.setCursor()
+				e.screen.Show()
 			}
 
 		case *tcell.EventResize:
