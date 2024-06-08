@@ -16,7 +16,7 @@ func (b *Buffer) ClampCursor() {
 }
 
 func (b *Buffer) ClampCursorX() {
-	width := len(b.lines[b.Cursor.Y])
+	width := len(b.Lines[b.Cursor.Y])
 
 	if b.Cursor.X < 0 {
 		b.Cursor.X = 0
@@ -28,15 +28,15 @@ func (b *Buffer) ClampCursorX() {
 func (b *Buffer) ClampCursorY() {
 	if b.Cursor.Y < 0 {
 		b.Cursor.Y = 0
-	} else if b.Cursor.Y >= len(b.lines) {
-		b.Cursor.Y = len(b.lines) - 1
+	} else if b.Cursor.Y >= len(b.Lines) {
+		b.Cursor.Y = len(b.Lines) - 1
 	}
 }
 
 func (b *Buffer) GetCursorVisibleOffset() int {
 	offset := 4
 
-	for i, ch := range b.lines[b.Cursor.Y] {
+	for i, ch := range b.Lines[b.Cursor.Y] {
 		if i >= b.Cursor.X {
 			break
 		}
@@ -54,7 +54,7 @@ func (b *Buffer) GetCursorVisibleOffset() int {
 func (b *Buffer) GetCursorCharacterOffset(visible int) int {
 	offset := visible - 4
 
-	for i, ch := range b.lines[b.Cursor.Y] {
+	for i, ch := range b.Lines[b.Cursor.Y] {
 		if i >= b.Cursor.X {
 			break
 		}

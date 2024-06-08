@@ -2,15 +2,12 @@ package buffer
 
 import (
 	"bufio"
-	"editor/internal/config"
-	"fmt"
-	"github.com/gdamore/tcell/v2"
 	"os"
 	"slices"
 )
 
 type Buffer struct {
-	lines  []string
+	Lines  []string
 	Cursor *Cursor
 }
 
@@ -18,7 +15,7 @@ type Buffer struct {
 
 func New() *Buffer {
 	return &Buffer{
-		lines:  []string{""},
+		Lines:  []string{""},
 		Cursor: &Cursor{X: 0, Y: 0},
 	}
 }
@@ -33,51 +30,15 @@ func FromFile(file *os.File) (*Buffer, error) {
 	}
 
 	return &Buffer{
-		lines:  lines,
+		Lines:  lines,
 		Cursor: &Cursor{X: 0, Y: 0},
 	}, scanner.Err()
-}
-
-// Rendering
-
-func (b *Buffer) Render(s tcell.Screen) {
-	for y := 0; y < len(b.lines); y++ {
-		isCursorLine := y == b.Cursor.Y
-
-		numStyle := config.LineNumberStyle
-		if isCursorLine {
-			numStyle = config.LineStyle
-		}
-
-		x := b.drawStr(s, 1, y, fmt.Sprintf("%2d", y+1), numStyle) + 1
-		// TODO: x = b.drawChar(s, x, y, tcell.RuneVLine, config.LineNumberStyle)
-		b.drawStr(s, x, y, b.lines[y], config.LineStyle)
-	}
-}
-
-func (b *Buffer) drawStr(s tcell.Screen, x int, y int, str string, style tcell.Style) int {
-	for _, ch := range str {
-		if ch == '\t' {
-			for i := 0; i < config.TabWidth; i++ {
-				x = b.drawChar(s, x, y, ' ', style)
-			}
-		} else {
-			x = b.drawChar(s, x, y, ch, style)
-		}
-	}
-
-	return x
-}
-
-func (b *Buffer) drawChar(s tcell.Screen, x int, y int, ch rune, style tcell.Style) int {
-	s.SetContent(x, y, ch, nil, style)
-	return x + 1
 }
 
 // Editing
 
 func (b *Buffer) Insert(ch rune) {
-	line := b.lines[b.Cursor.Y]
+	line := b.Lines[b.Cursor.Y]
 
 	if b.Cursor.X == 0 {
 		line = string(ch) + line
@@ -91,18 +52,18 @@ func (b *Buffer) Insert(ch rune) {
 	}
 
 	b.Cursor.X++
-	b.lines[b.Cursor.Y] = line
+	b.Lines[b.Cursor.Y] = line
 }
 
 func (b *Buffer) Delete() {
-	line := b.lines[b.Cursor.Y]
+	line := b.Lines[b.Cursor.Y]
 
 	if b.Cursor.X == 0 {
 		if b.Cursor.Y > 0 {
-			above := b.lines[b.Cursor.Y-1]
+			above := b.Lines[b.Cursor.Y-1]
 
-			b.lines[b.Cursor.Y-1] += line
-			b.lines = slices.Delete(b.lines, b.Cursor.Y, b.Cursor.Y+1)
+			b.Lines[b.Cursor.Y-1] += line
+			b.Lines = slices.Delete(b.Lines, b.Cursor.Y, b.Cursor.Y+1)
 
 			b.Cursor.X = len(above)
 			b.Cursor.Y--
@@ -114,18 +75,18 @@ func (b *Buffer) Delete() {
 	left := line[:b.Cursor.X-1]
 	right := line[b.Cursor.X:]
 
-	b.lines[b.Cursor.Y] = left + right
+	b.Lines[b.Cursor.Y] = left + right
 	b.Cursor.X--
 }
 
 func (b *Buffer) NewLine() {
-	line := b.lines[b.Cursor.Y]
+	line := b.Lines[b.Cursor.Y]
 
 	left := line[:b.Cursor.X]
 	right := line[b.Cursor.X:]
 
-	b.lines[b.Cursor.Y] = left
-	b.lines = slices.Insert(b.lines, b.Cursor.Y+1, right)
+	b.Lines[b.Cursor.Y] = left
+	b.Lines = slices.Insert(b.Lines, b.Cursor.Y+1, right)
 
 	b.Cursor.X = 0
 	b.Cursor.Y++
