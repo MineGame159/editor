@@ -15,8 +15,7 @@ type Editor struct {
 
 	firstDraw bool
 
-	buffer     *buffer.Buffer
-	bufferView *BufferView
+	view *BufferView
 }
 
 // Constructor
@@ -39,8 +38,8 @@ func New() (*Editor, error) {
 	editor.app.SetRootWidget(editor)
 
 	// Add widgets
-	editor.bufferView = &BufferView{}
-	editor.AddWidget(editor.bufferView, 1)
+	editor.view = NewBufferView()
+	editor.AddWidget(editor.view, 1)
 
 	return editor, nil
 }
@@ -68,8 +67,7 @@ func (e *Editor) LoadBuffer(path string) error {
 		}
 	}
 
-	e.buffer = buf
-	e.bufferView.buffer = buf
+	e.view.SetBuffer(buf)
 
 	return nil
 }
@@ -86,7 +84,8 @@ func (e *Editor) Draw() {
 		e.firstDraw = false
 	}
 
-	e.screen.ShowCursor(e.buffer.GetCursorVisibleOffset(), e.buffer.Cursor.Y)
+	buf := e.view.GetBuffer()
+	e.screen.ShowCursor(buf.GetCursorVisibleOffset(), buf.Cursor.Y)
 
 	e.BoxLayout.Draw()
 }
